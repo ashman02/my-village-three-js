@@ -1,3 +1,4 @@
+import * as THREE from "three"
 import Sizes from "./Utils/Sizes.js"
 import Time from "./Utils/Time.js"
 
@@ -12,7 +13,13 @@ export default class Experience {
 		// Setup
 		this.sizes = new Sizes()
 		this.time = new Time()
+		this.scene = new THREE.Scene()
 
+        /**
+         * Event Listeners
+         * 1. resize from Sizes class
+         * 2. tick from Time class
+         */
 		// Listen to resize event from Sizes class and call resize method
 		this.sizes.on("resize", () => {
 			this.resize()
