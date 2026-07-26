@@ -1,9 +1,20 @@
 import * as THREE from "three"
 import Sizes from "./Utils/Sizes.js"
 import Time from "./Utils/Time.js"
+import Camera from "./Camera.js"
+
+let instance = null
 
 export default class Experience {
 	constructor(canvas) {
+
+		// Singleton
+		if(instance){
+			return instance
+		}
+
+		instance = this
+
 		// Global access
 		window.experience = this
 
@@ -14,6 +25,7 @@ export default class Experience {
 		this.sizes = new Sizes()
 		this.time = new Time()
 		this.scene = new THREE.Scene()
+		this.camera = new Camera()
 
         /**
          * Event Listeners
@@ -36,7 +48,12 @@ export default class Experience {
 	 * 1. Resize - Will be called when window is resized
 	 * 2. Update - Will be called on each frame
 	 */
-	resize() {}
+	resize() {
+		this.camera.resize()
+	}
 
-	update() {}
+	update() {
+		// For orbit controls
+		this.camera.update()
+	}
 }
