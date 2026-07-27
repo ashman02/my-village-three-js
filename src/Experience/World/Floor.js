@@ -1,21 +1,38 @@
 import * as THREE from "three"
 import Experience from "../Experience.js"
 
-export default class Floor {
-    constructor(){
-        this.experience = new Experience()
-        this.scene = this.experience.scene
+let planeWidth = 10
+let planeHeight = 10
 
-        this.setFloor()
-    }
-    setFloor(){
-        this.instance = new THREE.Mesh(
-            new THREE.PlaneGeometry(10, 10),
-            new THREE.MeshBasicMaterial({
-                color: "#fff"
-            })
-        )
-        this.instance.rotation.x = - Math.PI * 0.5
-        this.scene.add(this.instance)
-    }
+export default class Floor {
+	constructor() {
+		this.experience = new Experience()
+		this.scene = this.experience.scene
+		this.physics = this.experience.physics
+
+		this.setGeometry()
+		this.setMaterial()
+		this.setMesh()
+		this.getPhysics()
+	}
+	setGeometry() {
+		this.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight)
+	}
+	setMaterial() {
+		this.material = new THREE.MeshBasicMaterial({
+			color: "#fff",
+		})
+	}
+	setMesh() {
+		this.mesh = new THREE.Mesh(this.geometry, this.material)
+		this.mesh.rotation.x = -Math.PI * 0.5
+		this.scene.add(this.mesh)
+	}
+	getPhysics() {
+		this.physics.addPhysics(this.mesh, "fixed", false, () => {}, "cuboid", {
+			width: planeWidth / 2,
+			height: 0.001,
+			depth: planeHeight / 2,
+		})
+	}
 }
