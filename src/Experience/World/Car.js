@@ -7,6 +7,7 @@ export default class Car {
 		this.scene = this.experience.scene
 		this.time = this.experience.time
 		this.camera = this.experience.camera
+		this.physics = this.experience.physics
 
 		// input keys object and pressing state
 		this.keys = {
@@ -23,6 +24,7 @@ export default class Car {
 		window.addEventListener("keyup", (e) => this.onKeyUp(e))
 
 		this.setFollowSettings()
+		this.setPhysics()
 	}
 
 	setCar() {
@@ -59,6 +61,17 @@ export default class Car {
 			this.keys.backward = false
 		if (e.key === "ArrowLeft" || e.code === "KeyA") this.keys.left = false
 		if (e.key === "ArrowRight" || e.code === "KeyD") this.keys.right = false
+	}
+
+	setPhysics() {
+		this.physicsObject = this.physics.addPhysics(
+			this.mesh,
+			"kinematicPositionBased",
+			false,
+			undefined,
+			"cuboid",
+			{ width: 0.5, height: 0.5, depth: 1 },
+		)
 	}
 
 	updateSpeed(delta) {
@@ -102,9 +115,20 @@ export default class Car {
 			this.facingAngle,
 		)
 
-		// add our forward vector to our position.
-		// Again do not add things suddenly use delta time
-		this.mesh.position.addScaledVector(forward, this.speed * delta)
+		const movement = forward.multiplyScalar(this.speed * delta)
+
+		// Step 4: push uncorrected movement straight into the kinematic body (no collision yet)
+		const pos = this.physicsObject.rigidBody.translation()
+		this.physicsObject.rigidBody.setNextKinematicTranslation({
+			x: pos.x + movement.x,
+			y: pos.y + movement.y,
+			z: pos.z + movement.z,
+		})
+
+		// sync mesh from the body ourselves (autoAnimate is off)
+		const newPos = this.physicsObject.rigidBody.translation()
+		this.mesh.position.set(newPos.x, newPos.y, newPos.z)
+
 		this.mesh.rotation.y = this.facingAngle
 	}
 

@@ -72,8 +72,8 @@ export default class Experience {
 	}
 
 	update() {
-		this.physics.update()
 		this.world.update()
+		this.physics.update()
 		// For orbit controls
 		this.camera.update()
 		this.renderer.update()
