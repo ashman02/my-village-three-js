@@ -1,0 +1,115 @@
+import * as THREE from "three"
+import Experience from "../Experience.js"
+
+export default class Car {
+	constructor() {
+		this.experience = new Experience()
+		this.scene = this.experience.scene
+		this.time = this.experience.time
+
+		// input keys object and pressing state
+		this.keys = {
+			forward: false,
+			backward: false,
+			left: false,
+			right: false,
+		}
+
+		this.setCar()
+
+		// call key down and up method and pass event.
+		window.addEventListener("keydown", (e) => this.onKeyDown(e))
+		window.addEventListener("keyup", (e) => this.onKeyUp(e))
+	}
+
+	setCar() {
+		this.mesh = new THREE.Mesh(
+			new THREE.BoxGeometry(1, 1, 2),
+			new THREE.MeshNormalMaterial(),
+		)
+		this.mesh.position.y = 0.5
+		this.scene.add(this.mesh)
+
+		// movement
+		this.speed = 0
+		this.facingAngle = 0
+
+		// adjustables (put them in debug ui)
+		this.maxSpeed = 8
+		this.maxReversedSpeed = 4
+		this.acceleration = 6
+		this.friction = 6
+		this.turnSpeed = 2.5
+	}
+
+	onKeyDown(e) {
+		if (e.key === "ArrowUp" || e.code === "KeyW") this.keys.forward = true
+		if (e.key === "ArrowDown" || e.code === "KeyS")
+			this.keys.backward = true
+		if (e.key === "ArrowLeft" || e.code === "KeyA") this.keys.left = true
+		if (e.key === "ArrowRight" || e.code === "KeyD") this.keys.right = true
+	}
+
+	onKeyUp(e) {
+		if (e.key === "ArrowUp" || e.code === "KeyW") this.keys.forward = false
+		if (e.key === "ArrowDown" || e.code === "KeyS")
+			this.keys.backward = false
+		if (e.key === "ArrowLeft" || e.code === "KeyA") this.keys.left = false
+		if (e.key === "ArrowRight" || e.code === "KeyD") this.keys.right = false
+	}
+
+	updateSpeed(delta) {
+		// We are using delta time to accelerate and decelerate. (it gives real world feel because cars take time to reach it's full speed.)
+		// delta values is around 0.16. so on each frame we are adding this.acceleration * 0.16 to our speed.
+		if (this.keys.forward) {
+			this.speed += this.acceleration * delta
+		} else if (this.keys.backward) {
+			this.speed -= this.acceleration * delta
+		} else {
+			if (this.speed > 0)
+				this.speed = Math.max(0, this.speed - this.friction * delta)
+			else if (this.speed < 0)
+				this.speed = Math.min(0, this.speed + this.friction * delta)
+		}
+		this.speed = THREE.MathUtils.clamp(
+			this.speed,
+			-this.maxReversedSpeed,
+			this.maxSpeed,
+		)
+	}
+
+	updateFacing(delta) {
+		if (this.speed === 0) return
+
+		// direction change depending on our car is going backward or forward
+		const turnDirection = this.speed > 0 ? 1 : -1
+
+		// same detla time usage so changes feel real.
+		if (this.keys.left)
+			this.facingAngle += this.turnSpeed * delta * turnDirection
+		if (this.keys.right)
+			this.facingAngle -= this.turnSpeed * delta * turnDirection
+	}
+
+	updatePosition(delta) {
+		// so if we are going forward and backward it means we have to move our object in z axis.
+		// For the turn we have to rotate the object in y axis.
+		const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(
+			new THREE.Vector3(0, 1, 0),
+			this.facingAngle,
+		)
+
+		// add our forward vector to our position.
+		// Again do not add things suddenly use delta time
+		this.mesh.position.addScaledVector(forward, this.speed * delta)
+		this.mesh.rotation.y = this.facingAngle
+	}
+
+	update() {
+        // Our delta time is in miliseconds but we need in seconds so divide by 1000
+		const delta = this.time.delta / 1000
+		this.updateSpeed(delta)
+		this.updateFacing(delta)
+		this.updatePosition(delta)
+	}
+}
