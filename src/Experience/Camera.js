@@ -12,7 +12,7 @@ export default class Camera {
 
 		// Call methods
 		this.setInstance()
-        this.setOrbitControls()
+        // this.setOrbitControls()
 	}
 
 	setInstance() {
@@ -23,6 +23,7 @@ export default class Camera {
 			1000,
 		)
 		this.instance.position.set(0, 2, 4)
+		this.instance.lookAt(0, 0, 0)
         this.scene.add(this.instance)
 	}
 
@@ -37,6 +38,6 @@ export default class Camera {
     }
 
     update(){
-        this.controls.update()
+        // this.controls.update()
     }
 }

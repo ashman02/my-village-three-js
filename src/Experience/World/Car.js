@@ -6,6 +6,7 @@ export default class Car {
 		this.experience = new Experience()
 		this.scene = this.experience.scene
 		this.time = this.experience.time
+		this.camera = this.experience.camera
 
 		// input keys object and pressing state
 		this.keys = {
@@ -20,6 +21,8 @@ export default class Car {
 		// call key down and up method and pass event.
 		window.addEventListener("keydown", (e) => this.onKeyDown(e))
 		window.addEventListener("keyup", (e) => this.onKeyUp(e))
+
+		this.setFollowSettings()
 	}
 
 	setCar() {
@@ -105,11 +108,40 @@ export default class Car {
 		this.mesh.rotation.y = this.facingAngle
 	}
 
+	// Make camera to follow our car
+	setFollowSettings() {
+		this.followOffset = new THREE.Vector3(0, 2, 5)
+		this.followLerp = 5
+		this.lookAtLerp = 8
+
+		this._desiredPosition = new THREE.Vector3()
+		this._currentLookAt = new THREE.Vector3()
+	}
+
+	updateFollow(delta) {
+		// rotate the offset vector to follow the car even car turns
+		const rotatedOffset = this.followOffset
+			.clone()
+			.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.facingAngle)
+
+		this._desiredPosition.copy(this.mesh.position).add(rotatedOffset)
+
+		const posAlpha = 1 - Math.exp(-this.followLerp * delta)
+		const lookAlpha = 1 - Math.exp(-this.lookAtLerp * delta)
+
+		this.camera.instance.position.lerp(this._desiredPosition, posAlpha)
+
+		this._currentLookAt.lerp(this.mesh.position, lookAlpha)
+		this.camera.instance.lookAt(this._currentLookAt)
+	}
+
 	update() {
-        // Our delta time is in miliseconds but we need in seconds so divide by 1000
+		// Our delta time is in miliseconds but we need in seconds so divide by 1000
 		const delta = this.time.delta / 1000
 		this.updateSpeed(delta)
 		this.updateFacing(delta)
 		this.updatePosition(delta)
+
+		this.updateFollow(delta)
 	}
 }
