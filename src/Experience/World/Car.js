@@ -115,21 +115,59 @@ export default class Car {
 			this.facingAngle,
 		)
 
-		const movement = forward.multiplyScalar(this.speed * delta)
+		const desiredMovement = forward.multiplyScalar(this.speed * delta)
+
+		this.physics.characterController.computeColliderMovement(
+			this.physicsObject.collider,
+			desiredMovement,
+		)
+
+		const corrected = this.physics.characterController.computedMovement()
+
+		// NEW: push any dynamic bodies the controller detected as obstacles
+		this.applyPushForces()
 
 		// Step 4: push uncorrected movement straight into the kinematic body (no collision yet)
 		const pos = this.physicsObject.rigidBody.translation()
-		this.physicsObject.rigidBody.setNextKinematicTranslation({
-			x: pos.x + movement.x,
-			y: pos.y + movement.y,
-			z: pos.z + movement.z,
-		})
+		const newPos = {
+			x: pos.x + corrected.x,
+			y: pos.y + corrected.y,
+			z: pos.z + corrected.z,
+		}
 
-		// sync mesh from the body ourselves (autoAnimate is off)
-		const newPos = this.physicsObject.rigidBody.translation()
+		this.physicsObject.rigidBody.setNextKinematicTranslation(newPos)
+
+		// sync mesh directly — no need to wait for world.step() and read it back
 		this.mesh.position.set(newPos.x, newPos.y, newPos.z)
-
 		this.mesh.rotation.y = this.facingAngle
+	}
+
+	applyPushForces() {
+		const controller = this.physics.characterController
+		const count = controller.numComputedCollisions()
+
+		for (let i = 0; i < count; i++) {
+			const collision = controller.computedCollision(i)
+			const hitCollider = collision.collider
+			const hitBody = hitCollider.parent()
+
+			if (
+				!hitBody ||
+				hitBody.bodyType() !== this.physics.RAPIER.RigidBodyType.Dynamic
+			) {
+				continue // skip static/fixed obstacles — nothing to push
+			}
+
+			// push direction: away from the car, along the collision normal
+			const pushStrength = 1.5 // tune this
+			const impulse = {
+				x: -collision.normal1.x * pushStrength,
+				y: 0, // usually keep pushes horizontal so you don't launch things upward
+				z: -collision.normal1.z * pushStrength,
+			}
+
+			hitBody.applyImpulse(impulse, true)
+		}
 	}
 
 	// Make camera to follow our car

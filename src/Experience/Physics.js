@@ -14,6 +14,13 @@ export default class Physics {
 	setInstance() {
 		let gravity = { x: 0.0, y: -9.81, z: 0.0 }
 		this.world = new this.RAPIER.World(gravity)
+
+		// Character controller
+		this.characterController = this.world.createCharacterController(0.01)
+		this.characterController.setSlideEnabled(true)
+		this.characterController.setMaxSlopeClimbAngle(45 * Math.PI / 180)
+		this.characterController.setMinSlopeSlideAngle(30 * Math.PI / 180)
+		this.characterController.enableAutostep(0.3, 0.2, true)
 	}
 
 	// Function that adds physics to the objects
