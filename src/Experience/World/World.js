@@ -6,10 +6,11 @@ import Car from "./Car.js"
 export default class World {
 	constructor() {
 		this.floor = new Floor()
-		this.car = new Car()
+		// Comment the car and enable orbit controls so you can build other things easily.
+		// this.car = new Car()
 	}
 
 	update() {
-		this.car.update()
+		// this.car.update()
 	}
 }

@@ -12,7 +12,8 @@ export default class Camera {
 
 		// Call methods
 		this.setInstance()
-        // this.setOrbitControls()
+		// Enable orbit controls as of now until car is disabled.
+        this.setOrbitControls()
 	}
 
 	setInstance() {
@@ -38,6 +39,6 @@ export default class Camera {
     }
 
     update(){
-        // this.controls.update()
+        this.controls.update()
     }
 }

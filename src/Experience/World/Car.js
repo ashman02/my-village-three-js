@@ -64,8 +64,19 @@ export default class Car {
 			new THREE.BoxGeometry(1, 1, 2),
 			new THREE.MeshNormalMaterial(),
 		)
-		this.mesh.position.y = 1
+		this.mesh.position.y = 0.5
 		this.scene.add(this.mesh)
+	}
+
+	setPhysics() {
+		this.physicsObject = this.physics.addPhysics(
+			this.mesh,
+			"kinematicPositionBased",
+			false,
+			undefined,
+			"cuboid",
+			{ width: 0.5, height: 0.5, depth: 1 },
+		)
 	}
 
 	// Find out which key is pressed and set the corresponding value to true
@@ -85,17 +96,6 @@ export default class Car {
 			this.keys.backward = false
 		if (e.key === "ArrowLeft" || e.code === "KeyA") this.keys.left = false
 		if (e.key === "ArrowRight" || e.code === "KeyD") this.keys.right = false
-	}
-
-	setPhysics() {
-		this.physicsObject = this.physics.addPhysics(
-			this.mesh,
-			"kinematicPositionBased",
-			false,
-			undefined,
-			"cuboid",
-			{ width: 0.5, height: 0.5, depth: 1 },
-		)
 	}
 
 	updateSpeed(delta) {
@@ -227,7 +227,7 @@ export default class Car {
 	}
 
 	// NOTE - I am not using this as of now because I am using build in setApplyImpulsesToDynamicBodies() on our character controller.
-	// Because your car is a kinematic body, physics engines treat it like an unstoppable bulldozer: when it runs into dynamic objects (like boxes, barrels, or traffic cones), it won't naturally bounce off or push them. 
+	// Because your car is a kinematic body, physics engines treat it like an unstoppable bulldozer: when it runs into dynamic objects (like boxes, barrels, or traffic cones), it won't naturally bounce off or push them.
 	// applyPushForces() {
 	// 	const controller = this.physics.characterController
 
@@ -307,4 +307,4 @@ export default class Car {
 	}
 }
 
-// I am noticing a little bug when I hit with some dynamic objects. My car feels going through the object at first but it pushes it. 
+// I am noticing a little bug when I hit with some dynamic objects. My car feels going through the object at first but it pushes it.
