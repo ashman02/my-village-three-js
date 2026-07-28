@@ -21,6 +21,7 @@ export default class Physics {
 		this.characterController.setMaxSlopeClimbAngle(45 * Math.PI / 180)
 		this.characterController.setMinSlopeSlideAngle(30 * Math.PI / 180)
 		this.characterController.enableAutostep(0.3, 0.2, true)
+		this.characterController.setApplyImpulsesToDynamicBodies(true)
 	}
 
 	// Function that adds physics to the objects

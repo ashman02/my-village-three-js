@@ -205,9 +205,6 @@ export default class Car {
 		// get corrected movement
 		const corrected = this.physics.characterController.computedMovement()
 
-		// NEW: push any dynamic bodies the controller detected as obstacles
-		this.applyPushForces()
-
 		// Get the current position of the car
 		const pos = this.physicsObject.rigidBody.translation()
 
@@ -229,47 +226,48 @@ export default class Car {
 		this.mesh.rotation.y = this.facingAngle
 	}
 
-	// Because your car is a kinematic body, physics engines treat it like an unstoppable bulldozer: when it runs into dynamic objects (like boxes, barrels, or traffic cones), it won't naturally bounce off or push them.
-	applyPushForces() {
-		const controller = this.physics.characterController
+	// NOTE - I am not using this as of now because I am using build in setApplyImpulsesToDynamicBodies() on our character controller.
+	// Because your car is a kinematic body, physics engines treat it like an unstoppable bulldozer: when it runs into dynamic objects (like boxes, barrels, or traffic cones), it won't naturally bounce off or push them. 
+	// applyPushForces() {
+	// 	const controller = this.physics.characterController
 
-		// Our controller recorded every surface or obstacles our car touched during that frame.
-		const count = controller.numComputedCollisions()
+	// 	// Our controller recorded every surface or obstacles our car touched during that frame.
+	// 	const count = controller.numComputedCollisions()
 
-		// go through each obstacle
-		for (let i = 0; i < count; i++) {
-			const collision = controller.computedCollision(i)
-			const hitCollider = collision.collider
-			const hitBody = hitCollider.parent()
+	// 	// go through each obstacle
+	// 	for (let i = 0; i < count; i++) {
+	// 		const collision = controller.computedCollision(i)
+	// 		const hitCollider = collision.collider
+	// 		const hitBody = hitCollider.parent()
 
-			// check if the obstacle is dynamic
-			if (
-				!hitBody ||
-				hitBody.bodyType() !== this.physics.RAPIER.RigidBodyType.Dynamic
-			) {
-				continue // skip static/fixed obstacles — nothing to push
-			}
+	// 		// check if the obstacle is dynamic
+	// 		if (
+	// 			!hitBody ||
+	// 			hitBody.bodyType() !== this.physics.RAPIER.RigidBodyType.Dynamic
+	// 		) {
+	// 			continue // skip static/fixed obstacles — nothing to push
+	// 		}
 
-			// push direction: away from the car, along the collision normal
-			const pushStrength = 1.5 // tune this - we can use car speed as well.
-			//normal1 is the collision vector pointing from the hit obstacle to the car. So we will reverse it by multiplying with (-). so it points away from the car to the hit object.
-			let nx = -collision.normal1.x
-			let nz = -collision.normal1.z
-			const len = Math.hypot(nx, nz)
-			if (len > 0.0001) {
-				nx /= len
-				nz /= len
+	// 		// push direction: away from the car, along the collision normal
+	// 		const pushStrength = 1.5 // tune this - we can use car speed as well.
+	// 		//normal1 is the collision vector pointing from the hit obstacle to the car. So we will reverse it by multiplying with (-). so it points away from the car to the hit object.
+	// 		let nx = -collision.normal1.x
+	// 		let nz = -collision.normal1.z
+	// 		const len = Math.hypot(nx, nz)
+	// 		if (len > 0.0001) {
+	// 			nx /= len
+	// 			nz /= len
 
-				const impulse = {
-					x: nx * pushStrength,
-					y: 0,
-					z: nz * pushStrength,
-				}
-				// apply impluse and wake up the body if it was sleeping
-				hitBody.applyImpulse(impulse, true)
-			}
-		}
-	}
+	// 			const impulse = {
+	// 				x: nx * pushStrength,
+	// 				y: 0,
+	// 				z: nz * pushStrength,
+	// 			}
+	// 			// apply impluse and wake up the body if it was sleeping
+	// 			hitBody.applyImpulse(impulse, true)
+	// 		}
+	// 	}
+	// }
 
 	// Camera follow the car logic
 	updateCamera(delta) {
