@@ -9,6 +9,29 @@ export default class Car {
 		this.camera = this.experience.camera
 		this.physics = this.experience.physics
 
+		this.setVariables()
+		this.setCar()
+
+		// call key down and up method and pass event.
+		window.addEventListener("keydown", (e) => this.onKeyDown(e))
+		window.addEventListener("keyup", (e) => this.onKeyUp(e))
+
+		this.setPhysics()
+	}
+
+	setVariables() {
+		// movement
+		this.speed = 0
+		this.facingAngle = 0
+
+		// adjustables (put them in debug ui)
+		this.maxSpeed = 8 // max speed of the car
+		this.maxReversedSpeed = 4 // max speed in reverse
+		this.acceleration = 6 // how much time it takes to reach max speed
+		this.breakForce = 15 // how much time it takes to stop when opposite key is pressed (when breaks applied)
+		this.friction = 4 // how much time it takes to stop once we let go of a key
+		this.turnSpeed = 2.5 // how fast the car turns
+
 		// input keys object and pressing state
 		this.keys = {
 			forward: false,
@@ -17,14 +40,23 @@ export default class Car {
 			right: false,
 		}
 
-		this.setCar()
+		// CREATING VECTORS HERE AND REUSING THOSE VECTORS LATER IN THE CODE
+		// Just telling to rotate on Y axis. Used in updateCamera and updatePosition methods.
+		this._yAxis = new THREE.Vector3(0, 1, 0)
+		// used in update position to set the direction our car is facing
+		this._forward = new THREE.Vector3()
 
-		// call key down and up method and pass event.
-		window.addEventListener("keydown", (e) => this.onKeyDown(e))
-		window.addEventListener("keyup", (e) => this.onKeyUp(e))
-
-		this.setFollowSettings()
-		this.setPhysics()
+		// VECTORS USED IN UPDATE CAMERA
+		// used in updateCamera to set the direction of our camera relative to the car direction.
+		this._rotatedOffset = new THREE.Vector3()
+		// where our camera sits relative to the car.
+		this.followOffset = new THREE.Vector3(0, 2, 5)
+		// To make our camera follow the car smoothly. lower the number more smoothness.
+		this.followLerp = 5
+		this.lookAtLerp = 8
+		// used in updateCamera to set the direction of our camera relative to the car direction.
+		this._desiredPosition = new THREE.Vector3()
+		this._currentLookAt = new THREE.Vector3()
 	}
 
 	setCar() {
@@ -34,17 +66,6 @@ export default class Car {
 		)
 		this.mesh.position.y = 1
 		this.scene.add(this.mesh)
-
-		// movement
-		this.speed = 0
-		this.facingAngle = 0
-
-		// adjustables (put them in debug ui)
-		this.maxSpeed = 8 // max speed of the car
-		this.maxReversedSpeed = 4 // max speed in reverse
-		this.acceleration = 6 // how much time it takes to reach max speed
-		this.friction = 6 // how much time it takes to stop once we let go of a key
-		this.turnSpeed = 2.5 // how fast the car turns
 	}
 
 	// Find out which key is pressed and set the corresponding value to true
@@ -81,11 +102,23 @@ export default class Car {
 		// We are using delta time to accelerate and decelerate. (it gives real world feel because cars take time to reach it's full speed.)
 		// delta value is around 0.16. so on each frame we are adding this.acceleration * 0.16 to our speed.
 		if (this.keys.forward) {
-			this.speed += this.acceleration * delta
+			if (this.speed < 0) {
+				// if we are in reverse (speed is less than 0) and then pressing forward key we are breaking
+				this.speed += this.breakForce * delta
+			} else {
+				this.speed += this.acceleration * delta
+			}
 		} else if (this.keys.backward) {
-			this.speed -= this.acceleration * delta
+			if (this.speed > 0) {
+				// if we are in forward (speed is greater than 0) and then pressing backward key we are breaking
+				this.speed -= this.breakForce * delta
+			} else {
+				this.speed -= this.acceleration * delta
+			}
 		} else {
 			// if we are not pressing any key but still there is some speed we are decelerating it.
+			// We are subtracting the friction value from our speed.
+			// We are using Math.max and min to make sure value does not go beyond 0 again.
 			if (this.speed > 0)
 				this.speed = Math.max(0, this.speed - this.friction * delta)
 			else if (this.speed < 0)
@@ -100,24 +133,28 @@ export default class Car {
 	}
 
 	updateFacing(delta) {
-		if (this.speed === 0) return
+		if (Math.abs(this.speed) < 0.01) return // Deadzone: Don't turn when stationary
 
+		// Scale turn strength with speed so you can't spin at full speed while barely moving
+		const speedFactor = Math.min(Math.abs(this.speed) / this.maxSpeed, 1)
 		// direction change depending on our car is going backward or forward  (real world feel)
-		const turnDirection = this.speed > 0 ? 1 : -1
+		const turnDirection = this.speed >= 0 ? 1 : -1
 
 		// same detla time we are using to accelerate and decelerate. But this time we are using it to turn the car.
 		// One more thing to note this is rotation on y axis. So on left key press we are adding values and or right key press we are subtracting.
 		if (this.keys.left)
-			this.facingAngle += this.turnSpeed * delta * turnDirection
+			this.facingAngle +=
+				this.turnSpeed * delta * turnDirection * speedFactor
 		if (this.keys.right)
-			this.facingAngle -= this.turnSpeed * delta * turnDirection
+			this.facingAngle -=
+				this.turnSpeed * delta * turnDirection * speedFactor
 	}
 
 	updatePosition(delta) {
 		/**
 		 * Direction our car facing in 3D space
 		 * 1. First vector (0, 0, -1) - this is base vector. In three js Z is considered forward direction. This repesents where your car would face if it had not turned at all.
-		 * 2. Second vector (0, 1, 0) - When we turn our car left or right we need to rotate it on Y axis. So this vector point towards Y axis.
+		 * 2. Second vector (0, 1, 0) (this.yAxis) - When we turn our car left or right we need to rotate it on Y axis. So this vector point towards Y axis.
 		 * 3. .applyAxisAngle - this method will rotate our initial forward vector on Y axis based on angle.
 		 *
 		 * - Scenario A: this.facingAngle = 0 (No turn)
@@ -139,10 +176,9 @@ export default class Car {
 		 * --- Movement: The car drives diagonally up and left (North-West).
 		 *
 		 */
-		const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(
-			new THREE.Vector3(0, 1, 0),
-			this.facingAngle,
-		)
+		this._forward
+			.set(0, 0, -1)
+			.applyAxisAngle(this._yAxis, this.facingAngle)
 
 		/**
 		 * - this.speed * delta = distance in units. So if our speed is 8 and delta is 0.016 then we are moving 0.128 units in this frame.
@@ -158,7 +194,7 @@ export default class Car {
 		 * ----- desiredMovement = (-0.113, 0, -0.113)
 		 *
 		 */
-		const desiredMovement = forward.multiplyScalar(this.speed * delta)
+		const desiredMovement = this._forward.multiplyScalar(this.speed * delta)
 
 		// Pass desired movement to the character controller so that it can compute corrected movement. (checks if there are any obstacles in the way)
 		this.physics.characterController.computeColliderMovement(
@@ -175,9 +211,9 @@ export default class Car {
 		// Get the current position of the car
 		const pos = this.physicsObject.rigidBody.translation()
 
-		// Calculate the new position. 
+		// Calculate the new position.
 		// It should be same as desiredMovement if there was no collision.
-		// If there was a collision, it should be corrected 
+		// If there was a collision, it should be corrected
 		const newPos = {
 			x: pos.x + corrected.x,
 			y: pos.y + corrected.y,
@@ -215,54 +251,49 @@ export default class Car {
 			}
 
 			// push direction: away from the car, along the collision normal
-			const pushStrength = 1.5 // tune this - we can use car speed as well. 
+			const pushStrength = 1.5 // tune this - we can use car speed as well.
 			//normal1 is the collision vector pointing from the hit obstacle to the car. So we will reverse it by multiplying with (-). so it points away from the car to the hit object.
-			const impulse = {
-				x: -collision.normal1.x * pushStrength,
-				y: 0, // usually keep pushes horizontal so you don't launch things upward
-				z: -collision.normal1.z * pushStrength,
+			let nx = -collision.normal1.x
+			let nz = -collision.normal1.z
+			const len = Math.hypot(nx, nz)
+			if (len > 0.0001) {
+				nx /= len
+				nz /= len
+
+				const impulse = {
+					x: nx * pushStrength,
+					y: 0,
+					z: nz * pushStrength,
+				}
+				// apply impluse and wake up the body if it was sleeping
+				hitBody.applyImpulse(impulse, true)
 			}
-			// apply impluse and wake up the body if it was sleeping
-			hitBody.applyImpulse(impulse, true)
 		}
 	}
 
-	// Make camera to follow our car
-	setFollowSettings() {
-		this.followOffset = new THREE.Vector3(0, 2, 5) // where our camera sits relative to the car.
-
-		// smooth follow. lower is more smooth. 
-		this.followLerp = 5 
-		this.lookAtLerp = 8
-		
-		// reusable vectors to prevent memory allocation every frame.  
-		this._desiredPosition = new THREE.Vector3()
-		this._currentLookAt = new THREE.Vector3()
-	}
-
-	updateFollow(delta) {
+	// Camera follow the car logic
+	updateCamera(delta) {
 		// rotate the offset vector to follow the car even car turns
 		// Same logic as in updatePosition (for more deep understanding check it out)
-		const rotatedOffset = this.followOffset
-			.clone()
-			.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.facingAngle)
+		this._rotatedOffset
+			.copy(this.followOffset)
+			.applyAxisAngle(this._yAxis, this.facingAngle)
 
 		// desired position - copy current position and add the rotated offset
-		this._desiredPosition.copy(this.mesh.position).add(rotatedOffset)
+		this._desiredPosition.copy(this.mesh.position).add(this._rotatedOffset)
 
-		// Update camera position 
-		// this.camera.instance.position.lerp(this._desiredPosition, 0.1) // basic solution. 
-		// this.camera.instance.position.lerp(this._desiredPosition, this.followLerp * delta) // little better solution. 
+		// Update camera position
+		// this.camera.instance.position.lerp(this._desiredPosition, 0.1) // basic solution.
+		// this.camera.instance.position.lerp(this._desiredPosition, this.followLerp * delta) // little better solution.
 
-		// Frame rate independent smoothing. 
+		// Frame rate independent smoothing.
 		const posAlpha = 1 - Math.exp(-this.followLerp * delta)
 		const lookAlpha = 1 - Math.exp(-this.lookAtLerp * delta)
 
 		// move camera towards desired position
 		this.camera.instance.position.lerp(this._desiredPosition, posAlpha)
-		
 
-		// smoothly track the point the camera looking at. 
+		// smoothly track the point the camera looking at.
 		this._currentLookAt.lerp(this.mesh.position, lookAlpha)
 		this.camera.instance.lookAt(this._currentLookAt)
 	}
@@ -274,6 +305,8 @@ export default class Car {
 		this.updateFacing(delta)
 		this.updatePosition(delta)
 
-		this.updateFollow(delta)
+		this.updateCamera(delta)
 	}
 }
+
+// I am noticing a little bug when I hit with some dynamic objects. My car feels going through the object at first but it pushes it. 
