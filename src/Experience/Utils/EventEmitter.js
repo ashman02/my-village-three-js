@@ -3,6 +3,10 @@
 // Did not create myself just copy code from buron simon
 // Link - https://gist.github.com/brunosimon/120acda915e6629e3a4d497935b16bdf
 
+// In his latest portfolio code he has updated this class so we can use new instead of this class. 
+// https://github.com/brunosimon/folio-2025/blob/main/sources/Game/Events.js
+// He is not using inheritance to use this class he is using instancing. 
+
 export default class EventEmitter {
 	constructor() {
 		this.callbacks = {}

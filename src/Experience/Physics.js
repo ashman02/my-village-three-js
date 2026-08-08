@@ -25,6 +25,8 @@ export default class Physics {
 	}
 
 	// Function that adds physics to the objects
+	// We can improve this function dracstically according to the Bruno Simon code. This function can take much more parameters like array of colliders, position, rotation, canSleep etc (properties like this. )
+	// Check his portfolio code to know more about it.
 	addPhysics(
 		mesh,
 		rigidBodyType,

@@ -308,3 +308,16 @@ export default class Car {
 }
 
 // I am noticing a little bug when I hit with some dynamic objects. My car feels going through the object at first but it pushes it.
+// Claude said we can add mass to our character and this can fix this issue.
+// In physics.js just add - characterController.setCharacterMass(/* e.g. 60 for a car-ish mass */)
+
+// Some other improvements claude suggested 
+// Clamp the detla value - const delta = Math.min(this.time.delta / 1000, 0.1)
+
+/**
+ * Bruno Simon Part
+ * 
+ * 1. My car is working but I can improve this. Bruno Simon has shared resources we can look to improve our car. Dev Blog - 1
+ * -- https://rapier.rs/javascript3d/classes/DynamicRayCastVehicleController.html
+ * -- https://sketches.isaacmason.com/sketch/rapier/dynamic-raycast-vehicle-controller
+ */

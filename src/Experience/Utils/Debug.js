@@ -1,4 +1,5 @@
 import GUI from "lil-gui"
+// He uses TweakPane in his latest portfolio code. I can switch to that later. 
 
 export default class Debug {
     constructor(){
